@@ -1,0 +1,166 @@
+{
+  "name": "opencomplete",
+  "displayName": "OpenComplete",
+  "description": "Superfast AI inline autocomplete for VS Code, powered by OpenRouter, OpenAI or Anthropic.",
+  "version": "0.2.0",
+  "publisher": "samar",
+  "license": "MIT",
+  "repository": "https://github.com/Samar2170/opencomplete",
+  "icon": "resources/icon.png",
+  "galleryBanner": { "color": "#6366F1", "theme": "dark" },
+  "categories": ["Programming Languages", "Machine Learning", "Other"],
+  "keywords": ["ai", "autocomplete", "copilot", "openrouter", "openai", "anthropic", "inline completion"],
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "opencomplete.setApiKey",
+        "title": "Set API Key",
+        "category": "OpenComplete"
+      },
+      {
+        "command": "opencomplete.pickModel",
+        "title": "Pick Model",
+        "category": "OpenComplete"
+      },
+      {
+        "command": "opencomplete.toggle",
+        "title": "Toggle Enable / Disable",
+        "category": "OpenComplete"
+      },
+      {
+        "command": "opencomplete.suggestAtCursor",
+        "title": "Suggest at Cursor",
+        "category": "OpenComplete"
+      },
+      {
+        "command": "opencomplete.acceptNextWord",
+        "title": "Accept Next Word",
+        "category": "OpenComplete"
+      },
+      {
+        "command": "opencomplete.benchmark",
+        "title": "Benchmark Models",
+        "category": "OpenComplete"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "opencomplete.suggestAtCursor",
+        "key": "alt+\\",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "opencomplete.acceptNextWord",
+        "key": "alt+]",
+        "when": "editorTextFocus && inlineSuggestionVisible && config.opencomplete.partialAccept"
+      }
+    ],
+    "configuration": {
+      "title": "OpenComplete",
+      "properties": {
+        "opencomplete.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inline completions."
+        },
+        "opencomplete.provider": {
+          "type": "string",
+          "enum": ["openrouter", "openai", "anthropic"],
+          "enumDescriptions": [
+            "OpenRouter (openrouter.ai)",
+            "OpenAI (api.openai.com)",
+            "Anthropic (api.anthropic.com)"
+          ],
+          "default": "openrouter",
+          "description": "API provider used for completions."
+        },
+        "opencomplete.model": {
+          "type": "string",
+          "default": "qwen/qwen3-coder:free",
+          "description": "Model id. Use the \"OpenComplete: Pick Model\" command to browse available models."
+        },
+        "opencomplete.maxTokens": {
+          "type": "integer",
+          "default": 64,
+          "minimum": 16,
+          "maximum": 1024,
+          "description": "Maximum tokens generated per completion. Lower is faster."
+        },
+        "opencomplete.temperature": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Sampling temperature for completions."
+        },
+        "opencomplete.debounceMs": {
+          "type": "integer",
+          "default": 150,
+          "minimum": 0,
+          "maximum": 2000,
+          "description": "Delay before requesting a completion after typing stops."
+        },
+        "opencomplete.contextLines": {
+          "type": "integer",
+          "default": 40,
+          "minimum": 10,
+          "maximum": 200,
+          "description": "How many lines of surrounding context to send."
+        },
+        "opencomplete.prefetchIdle": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prefetch a completion while the cursor idles at the end of a line."
+        },
+        "opencomplete.prefetchIdleMs": {
+          "type": "integer",
+          "default": 600,
+          "minimum": 100,
+          "maximum": 5000,
+          "description": "Idle time before prefetching."
+        },
+        "opencomplete.partialAccept": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable word-by-word acceptance with Alt+]."
+        },
+        "opencomplete.enabledLanguages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["*"],
+          "description": "Language ids completions are enabled for. [\"*\"] enables all languages."
+        },
+        "opencomplete.relatedFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include up to two open same-language tabs as extra context."
+        },
+        "opencomplete.relatedFileLines": {
+          "type": "integer",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 200,
+          "description": "How many lines of each related file to include."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc --noEmit && node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.0",
+    "@types/vscode": "1.90.0",
+    "@vscode/vsce": "^3.1.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.6.3"
+  }
+}
