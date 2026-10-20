@@ -3,6 +3,7 @@ import { CompletionClient, CompletionRequest, ModelInfo, toProviderError } from 
 
 const BASE = 'https://api.openai.com/v1';
 const STOP = ['\n\n\n\n'];
+const STOP_LINE = ['\n'];
 const MAX_STREAM_CHARS = 4000;
 
 export const CHAT_MODELS = ['gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o-mini', 'gpt-4o', 'gpt-4.1'];
@@ -26,7 +27,7 @@ export function createOpenAI(apiKey: string, getModel: () => string): Completion
           ],
           max_tokens: req.maxTokens,
           temperature: req.temperature,
-          stop: STOP,
+          stop: req.singleLine ? STOP_LINE : STOP,
           stream: true,
         }),
       });

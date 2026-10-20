@@ -24,6 +24,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('opencomplete.pickModel', () => pickModelCommand()),
     vscode.commands.registerCommand('opencomplete.toggle', () => toggleCommand()),
     vscode.commands.registerCommand('opencomplete.suggestAtCursor', suggestAtCursorCommand),
+    vscode.commands.registerCommand('opencomplete.suggestNextEdit', () => {
+      provider.preferNes();
+      return vscode.commands.executeCommand('editor.action.inlineSuggest.trigger');
+    }),
     vscode.commands.registerCommand('opencomplete.acceptNextWord', acceptNextWordCommand),
     vscode.commands.registerCommand('opencomplete.benchmark', () => runBenchmark()),
     vscode.workspace.onDidChangeTextDocument((e) => provider.onDocumentChanged(e)),

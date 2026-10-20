@@ -3,13 +3,15 @@ import { CompletionClient, CompletionRequest, ModelInfo, ProviderError, toProvid
 
 const BASE = 'https://openrouter.ai/api/v1';
 const STOP = ['\n\n\n\n'];
+const STOP_LINE = ['\n'];
 const MAX_STREAM_CHARS = 4000;
 
 const FALLBACK_MODELS = [
-  'qwen/qwen3-coder:free',
-  'z-ai/glm-4.5-air:free',
-  'deepseek/deepseek-chat-v3.1:free',
-  'mistralai/devstral-small:free',
+  'poolside/laguna-s-2.1:free',
+  'cohere/north-mini-code:free',
+  'qwen/qwen3-coder-flash',
+  'qwen/qwen-2.5-coder-32b-instruct',
+  'mistralai/codestral-2508',
   'openai/gpt-4.1-mini',
   'anthropic/claude-3.5-haiku',
 ];
@@ -36,8 +38,10 @@ export function createOpenRouter(apiKey: string, getModel: () => string): Comple
           ],
           max_tokens: req.maxTokens,
           temperature: req.temperature,
-          stop: STOP,
+          stop: req.singleLine ? STOP_LINE : STOP,
           stream: true,
+          reasoning: { enabled: false },
+          provider: { sort: 'latency' },
         }),
       });
       if (!res.ok) throw await toProviderError(res);

@@ -6,11 +6,13 @@ import { CHAT_MODELS } from './providers/openai';
 import { MODELS } from './providers/anthropic';
 import { ProviderId } from './providers/types';
 import { formatMs } from './format';
+import { NEXT_EDIT_SYSTEM, parseEditBlocks } from './nextEdit';
 
-const CANDIDATE_RE = /(coder|code|codestral|devstral|deepseek|glm|qwen|haiku|flash|mini|sonnet|kimi|gemini)/i;
+const CANDIDATE_RE = /(coder|code|codestral|devstral|deepseek|glm|qwen|haiku|flash|mini|sonnet|kimi|gemini|laguna|poolside|north)/i;
 const MAX_CANDIDATES = 12;
 const SAMPLES = 2;
 const SAMPLE_TIMEOUT_MS = 8000;
+const QUALITY_TIMEOUT_MS = 20000;
 const MAX_BENCH_TOKENS = 48;
 
 const BENCH_SYSTEM = 'You are an inline code autocompletion engine. Output ONLY the raw code to insert. No markdown, no prose.';
@@ -30,7 +32,23 @@ interface BenchResult {
   ttfts: number[];
   totals: number[];
   errors: number;
+  renameFixes?: number;
 }
+
+const QUALITY_USER = [
+  '<file path="profile.ts" language="typescript">',
+  'function getProfile(db: Database, id: string) {',
+  '  const account = db.users.find(id);',
+  '  if (!account) throw new Error("not found");',
+  '  return {',
+  '    name: user.name,',
+  '    ref: user.id,',
+  '  };',
+  '}',
+  '<CURSOR/>',
+  '</file>',
+  '<latest change>the user just renamed "user" to "account" - update other usages of the old name</latest change>',
+].join('\n');
 
 export async function runBenchmark(): Promise<void> {
   const provider = getProvider();
@@ -82,10 +100,14 @@ export async function runBenchmark(): Promise<void> {
     },
   );
 
-  const ranked = results.sort((a, b) => a.errors - b.errors || median(a.ttfts) - median(b.ttfts));
+  const ranked = results.sort(
+    (a, b) => b.renameFixes! - a.renameFixes! || a.errors - b.errors || median(a.ttfts) - median(b.ttfts),
+  );
   const items = ranked.map((r) => ({
     label: r.id,
-    description: `${r.free ? 'free · ' : ''}ttft ${formatMs(median(r.ttfts))} · total ${formatMs(median(r.totals))}`,
+    description: `${r.free ? 'free · ' : ''}ttft ${formatMs(median(r.ttfts))} · total ${formatMs(
+      median(r.totals),
+    )} · rename fixes ${r.renameFixes ?? '?'}/2`,
     detail: r.errors ? `${r.errors} of ${SAMPLES} samples failed` : undefined,
     id: r.id,
   }));
@@ -129,7 +151,28 @@ async function benchModel(provider: ProviderId, apiKey: string, id: string, free
       }
     }),
   );
-  return { id, free, ttfts, totals, errors };
+  const renameFixes = await benchQuality(client);
+  return { id, free, ttfts, totals, errors, renameFixes };
+}
+
+async function benchQuality(client: ReturnType<typeof createClientFor>): Promise<number> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), QUALITY_TIMEOUT_MS);
+  try {
+    const raw = await client.complete({
+      system: NEXT_EDIT_SYSTEM,
+      user: QUALITY_USER,
+      maxTokens: 400,
+      temperature: 0.1,
+      signal: controller.signal,
+    });
+    const blocks = parseEditBlocks(raw);
+    return blocks.filter((b) => b.before.includes('user.') && b.after.includes('account.')).length;
+  } catch {
+    return 0;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function median(nums: number[]): number {

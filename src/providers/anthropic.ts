@@ -3,6 +3,7 @@ import { CompletionClient, CompletionRequest, ModelInfo, ProviderError, toProvid
 
 const BASE = 'https://api.anthropic.com/v1';
 const STOP = ['\n\n\n\n'];
+const STOP_LINE = ['\n'];
 const MAX_STREAM_CHARS = 4000;
 
 export const MODELS = [
@@ -31,7 +32,7 @@ export function createAnthropic(apiKey: string, getModel: () => string): Complet
           temperature: req.temperature,
           system: req.system,
           messages: [{ role: 'user', content: req.user }],
-          stop_sequences: STOP,
+          stop_sequences: req.singleLine ? STOP_LINE : STOP,
           stream: true,
         }),
       });

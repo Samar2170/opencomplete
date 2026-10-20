@@ -2,13 +2,21 @@ import * as vscode from 'vscode';
 import { ProviderId } from './providers/types';
 
 let secrets: vscode.SecretStorage | undefined;
+let cfgCache: vscode.WorkspaceConfiguration | undefined;
+const keyCache = new Map<ProviderId, string>();
 
 export function initSecrets(context: vscode.ExtensionContext): void {
   secrets = context.secrets;
+  context.subscriptions.push(
+    context.secrets.onDidChange(() => keyCache.clear()),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('opencomplete')) cfgCache = undefined;
+    }),
+  );
 }
 
 function cfg(): vscode.WorkspaceConfiguration {
-  return vscode.workspace.getConfiguration('opencomplete');
+  return (cfgCache ??= vscode.workspace.getConfiguration('opencomplete'));
 }
 
 export function getProvider(): ProviderId {
@@ -16,7 +24,7 @@ export function getProvider(): ProviderId {
 }
 
 export function getModel(): string {
-  return cfg().get<string>('model', 'qwen/qwen3-coder:free');
+  return cfg().get<string>('model', 'poolside/laguna-s-2.1:free');
 }
 
 export function isEnabled(): boolean {
@@ -28,7 +36,29 @@ export function getDebounceMs(): number {
 }
 
 export function getContextLines(): number {
-  return cfg().get<number>('contextLines', 40);
+  return cfg().get<number>('contextLines', 60);
+}
+
+export type PromptStyle = 'auto' | 'chat' | 'fim';
+
+export function getPromptStyle(): PromptStyle {
+  return cfg().get<PromptStyle>('promptStyle', 'auto');
+}
+
+export function getNextEditEnabled(): boolean {
+  return cfg().get<boolean>('nextEdit.enabled', true);
+}
+
+export function getNextEditFallback(): boolean {
+  return cfg().get<boolean>('nextEdit.fallback', false);
+}
+
+export function getNextEditDebounceMs(): number {
+  return cfg().get<number>('nextEdit.debounceMs', 400);
+}
+
+export function getNextEditMaxFileChars(): number {
+  return cfg().get<number>('nextEdit.maxFileChars', 8000);
 }
 
 export function getMaxTokens(): number {
@@ -70,14 +100,20 @@ function secretKey(provider: ProviderId): string {
 }
 
 export async function getApiKey(provider: ProviderId): Promise<string | undefined> {
+  const memo = keyCache.get(provider);
+  if (memo) return memo;
   const stored = await secrets?.get(secretKey(provider));
-  if (stored) return stored;
+  if (stored) {
+    keyCache.set(provider, stored);
+    return stored;
+  }
   const fromEnv = process.env[ENV_KEYS[provider]];
   return fromEnv || undefined;
 }
 
 export async function storeApiKey(provider: ProviderId, value: string): Promise<void> {
   if (!secrets) return;
+  keyCache.delete(provider);
   if (value) {
     await secrets.store(secretKey(provider), value);
   } else {

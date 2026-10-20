@@ -6,6 +6,7 @@ export interface CompletionRequest {
   maxTokens: number;
   temperature: number;
   signal: AbortSignal;
+  singleLine?: boolean;
   onFirstToken?: () => void;
 }
 

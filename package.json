@@ -2,8 +2,8 @@
   "name": "opencomplete",
   "displayName": "OpenComplete",
   "description": "Superfast AI inline autocomplete for VS Code, powered by OpenRouter, OpenAI or Anthropic.",
-  "version": "0.2.0",
-  "publisher": "samar",
+  "version": "0.3.0",
+  "publisher": "samararora99",
   "license": "MIT",
   "repository": "https://github.com/Samar2170/opencomplete",
   "icon": "resources/icon.png",
@@ -38,6 +38,11 @@
         "category": "OpenComplete"
       },
       {
+        "command": "opencomplete.suggestNextEdit",
+        "title": "Suggest Next Edit",
+        "category": "OpenComplete"
+      },
+      {
         "command": "opencomplete.acceptNextWord",
         "title": "Accept Next Word",
         "category": "OpenComplete"
@@ -52,6 +57,11 @@
       {
         "command": "opencomplete.suggestAtCursor",
         "key": "alt+\\",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "opencomplete.suggestNextEdit",
+        "key": "alt+.",
         "when": "editorTextFocus"
       },
       {
@@ -81,8 +91,19 @@
         },
         "opencomplete.model": {
           "type": "string",
-          "default": "qwen/qwen3-coder:free",
+          "default": "poolside/laguna-s-2.1:free",
           "description": "Model id. Use the \"OpenComplete: Pick Model\" command to browse available models."
+        },
+        "opencomplete.promptStyle": {
+          "type": "string",
+          "enum": ["auto", "chat", "fim"],
+          "enumDescriptions": [
+            "Use native fill-in-the-middle markers when the model supports them, otherwise chat prompt.",
+            "Always use the chat-style prompt.",
+            "Always use fill-in-the-middle markers."
+          ],
+          "default": "auto",
+          "description": "Prompt format used for completions."
         },
         "opencomplete.maxTokens": {
           "type": "integer",
@@ -107,9 +128,9 @@
         },
         "opencomplete.contextLines": {
           "type": "integer",
-          "default": 40,
+          "default": 60,
           "minimum": 10,
-          "maximum": 200,
+          "maximum": 400,
           "description": "How many lines of surrounding context to send."
         },
         "opencomplete.prefetchIdle": {
@@ -146,6 +167,30 @@
           "minimum": 5,
           "maximum": 200,
           "description": "How many lines of each related file to include."
+        },
+        "opencomplete.nextEdit.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Predict edits elsewhere in the file (e.g. rename propagation) and show them as ghost text; Tab applies them."
+        },
+        "opencomplete.nextEdit.fallback": {
+          "type": "boolean",
+          "default": false,
+          "description": "When a normal completion comes back empty, make a second full-file request to predict a next edit. Adds latency; off by default."
+        },
+        "opencomplete.nextEdit.debounceMs": {
+          "type": "integer",
+          "default": 400,
+          "minimum": 0,
+          "maximum": 5000,
+          "description": "Delay before predicting a next edit after typing stops."
+        },
+        "opencomplete.nextEdit.maxFileChars": {
+          "type": "integer",
+          "default": 8000,
+          "minimum": 2000,
+          "maximum": 40000,
+          "description": "Maximum file size sent to the next-edit predictor."
         }
       }
     }
